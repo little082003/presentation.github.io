@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Requirement: ระบบค้นหาสินค้า (Product Search)</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700;800&family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;600&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    :root {
+      --bg: #0a0a1a;
+      --surface: #12122a;
+      --card: #1a1a3e;
+      --primary: #6c5ce7;
+      --secondary: #a29bfe;
+      --accent: #00cec9;
+      --accent2: #fd79a8;
+      --text: #e8e8f0;
+      --muted: #8888aa;
+      --success: #00b894;
+      --warning: #fdcb6e;
+      --danger: #ff7675
+    }
+
+    body {
+      font-family: 'Noto Sans Thai', 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: all .5s ease;
+      pointer-events: none
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all
+    }
+
+    .slide-number {
+      position: fixed;
+      bottom: 20px;
+      right: 30px;
+      font-size: 14px;
+      color: var(--muted);
+      z-index: 100;
+      font-family: 'Fira Code', monospace
+    }
+
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width .4s ease;
+      z-index: 100
+    }
+
+    h1 {
+      font-size: 2.8em;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--secondary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+      text-align: center;
+      line-height: 1.3
+    }
+
+    h2 {
+      font-size: 2em;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: 24px;
+      text-align: left;
+      width: 100%
+    }
+
+    h3 {
+      font-size: 1.3em;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 12px 0 8px
+    }
+
+    .subtitle {
+      font-size: 1.2em;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 10px
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: .75em;
+      font-weight: 600;
+      margin: 4px
+    }
+
+    .badge-fr {
+      background: rgba(108, 92, 231, .2);
+      color: var(--secondary);
+      border: 1px solid rgba(108, 92, 231, .4)
+    }
+
+    .badge-nfr {
+      background: rgba(0, 206, 201, .2);
+      color: var(--accent);
+      border: 1px solid rgba(0, 206, 201, .4)
+    }
+
+    .content {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 22px 26px;
+      border: 1px solid rgba(255, 255, 255, .06);
+      transition: transform .2s
+    }
+
+    .card:hover {
+      transform: translateY(-2px)
+    }
+
+    .card-title {
+      font-weight: 700;
+      font-size: 1.05em;
+      margin-bottom: 8px;
+      color: var(--secondary)
+    }
+
+    .card p,
+    .card li {
+      font-size: .88em;
+      line-height: 1.7;
+      color: var(--text)
+    }
+
+    .card ul {
+      padding-left: 18px
+    }
+
+    .card li {
+      margin-bottom: 4px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82em
+    }
+
+    th {
+      background: rgba(108, 92, 231, .2);
+      color: var(--secondary);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--primary)
+    }
+
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, .06)
+    }
+
+    tr:hover td {
+      background: rgba(108, 92, 231, .05)
+    }
+
+    .req-id {
+      font-family: 'Fira Code', monospace;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: .9em
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: .72em;
+      font-weight: 600
+    }
+
+    .tag-pos {
+      background: rgba(0, 184, 148, .15);
+      color: var(--success)
+    }
+
+    .tag-neg {
+      background: rgba(255, 118, 117, .15);
+      color: var(--danger)
+    }
+
+    .tag-bva {
+      background: rgba(253, 203, 110, .15);
+      color: var(--warning)
+    }
+
+    .ref-list {
+      font-size: .78em;
+      color: var(--muted);
+      line-height: 2
+    }
+
+    .ref-list a {
+      color: var(--accent);
+      text-decoration: none
+    }
+
+    .ref-list a:hover {
+      text-decoration: underline
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, rgba(108, 92, 231, .1), rgba(0, 206, 201, .1));
+      border: 1px solid rgba(108, 92, 231, .2);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin: 8px 0
+    }
+
+    .emoji {
+      font-size: 1.1em;
+      margin-right: 6px
+    }
+
+    nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 100
+    }
+
+    nav button {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, .1);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85em;
+      transition: all .2s
+    }
+
+    nav button:hover {
+      background: var(--primary);
+      border-color: var(--primary)
+    }
+
+    .icon-box {
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 12px
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 12px 0
+    }
+
+    .flow-item {
+      background: var(--card);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: .85em;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .flow-arrow {
+      color: var(--accent);
+      font-size: 1.2em
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Slide 1: Title -->
+  <div class="slide active" id="s1">
+    <div style="text-align:center">
+      <div style="font-size:3em;margin-bottom:16px">🔍</div>
+      <h1>Requirement:<br>ระบบค้นหาสินค้า<br>(Product Search)</h1>
+      <!-- <p class="subtitle">การออกแบบกรณีทดสอบจาก Requirement</p> -->
+      <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <span class="badge badge-fr">Functional Requirement</span>
+        <span class="badge badge-nfr">Non-Functional Requirement</span>
+        <span class="badge"
+          style="background:rgba(253,121,168,.15);color:var(--accent2);border:1px solid rgba(253,121,168,.3)">Test Case
+          Design</span>
+      </div>
+      <!-- <p style="margin-top:30px;color:var(--muted);font-size:.85em">วิชา Software Testing &bull; นำเสนอไม่เกิน 5 นาที</p> -->
+    </div>
+  </div>
+
+  <!-- Slide 2: What is Requirement -->
+  <div class="slide" id="s2">
+    <div class="content">
+      <h2>📋 Requirement คืออะไร?</h2>
+      <div class="highlight">
+        <p style="font-size:1em;line-height:1.8"><strong>Software Requirement</strong> = ข้อกำหนดที่ระบุว่าซอฟต์แวร์
+          <em>"ต้องทำอะไร"</em> และ <em>"ทำได้ดีแค่ไหน"</em><br>เป็นพื้นฐานที่สำคัญที่สุดในการออกแบบ Test Case</p>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div class="card">
+          <div class="card-title">✅ Functional Requirement (FR)</div>
+          <p>ระบบ <strong>ต้องทำ</strong> อะไรได้บ้าง<br><em>เช่น: ค้นหาสินค้าตามชื่อ, แสดงผลลัพธ์</em></p>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ Non-Functional Requirement (NFR)</div>
+          <p>ระบบทำงาน <strong>ได้ดีแค่ไหน</strong><br><em>เช่น: แสดงผลภายใน 2 วินาที, รองรับ 10,000 users</em></p>
+        </div>
+      </div>
+      <p style="font-size:.8em;color:var(--muted);margin-top:12px">📖 อ้างอิง: IEEE 830 / ISO/IEC/IEEE 29148:2018 —
+        มาตรฐานการเขียน SRS</p>
+    </div>
+  </div>
+
+  <!-- Slide 3: SRS ระบบ E-Commerce -->
+  <div class="slide" id="s3">
+    <div class="content">
+      <h2>🛒 SRS ตัวอย่าง 1: E-Commerce (Amazon / Shopee / Lazada)</h2>
+      <p style="color:var(--muted);margin-bottom:12px">เป้าหมาย: ให้ลูกค้าหาสินค้าเจอ → ซื้อ (Conversion)</p>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">✅ Functional Requirements</div>
+          <table>
+            <tr><td class="req-id">FR-S01</td><td>Search bar บน<strong>ทุกหน้า</strong></td></tr>
+            <tr><td class="req-id">FR-S02</td><td>Autocomplete suggestions แบบ real-time</td></tr>
+            <tr><td class="req-id">FR-S03</td><td>Filter ตาม ราคา, แบรนด์, rating, ที่ส่ง</td></tr>
+            <tr><td class="req-id">FR-S04</td><td>Sort ตาม relevance, ราคา, ใหม่สุด, rating</td></tr>
+            <tr><td class="req-id">FR-S05</td><td>ไม่พบ → แสดง "No results" + แนะนำ สินค้ากำลังเป็นที่นิยม</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ Non-Functional Requirements</div>
+          <table>
+            <tr><td class="req-id">NFR-S01</td><td>ผลลัพธ์แสดงภายใน <strong>&lt; 500ms</strong> (95% queries)</td></tr>
+            <tr><td class="req-id">NFR-S02</td><td>รองรับ <strong>50,000 ผู้ใช้พร้อมกัน</strong></td></tr>
+            <tr><td class="req-id">NFR-S03</td><td>Responsive บน Mobile / Tablet / Desktop</td></tr>
+          </table>
+          <div style="margin-top:12px;padding:10px;background:rgba(108,92,231,.1);border-radius:8px">
+            <p style="font-size:.75em;color:var(--muted)">📖 อ้างอิง: <strong>Baymard Institute</strong> — E-Commerce Search UX<br>
+            <a href="https://baymard.com/blog/autocomplete-design" target="_blank" style="color:var(--accent)">baymard.com/blog/autocomplete-design</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: SRS Hospital + Student -->
+  <div class="slide" id="s4">
+    <div class="content">
+      <h2>🏥🎓 SRS ตัวอย่าง 2-3: Hospital & Student Registration</h2>
+      <div class="grid2">
+        <div class="card" style="border-top:3px solid var(--accent2)">
+          <div class="card-title">🏥 Hospital Management System</div>
+          <p style="font-size:.8em;color:var(--muted);margin-bottom:8px">ค้นหาเวชระเบียนผู้ป่วย — เน้น Security</p>
+          <table>
+            <tr><td class="req-id">HMS-01</td><td>เฉพาะ <strong>authorized staff</strong> เท่านั้นที่ค้นหาได้</td></tr>
+            <tr><td class="req-id">HMS-02</td><td>ค้นหาด้วย Patient ID, ชื่อ, หรือวันเกิด</td></tr>
+            <tr><td class="req-id">HMS-03</td><td>ไม่พบ → แสดง "ไม่พบข้อมูล"</td></tr>
+            <tr><td class="req-id">HMS-04</td><td>แสดง 20 ผลลัพธ์/หน้า + Pagination</td></tr>
+            <tr><td class="req-id">NFR</td><td>ทุก query ต้อง <strong>Log ไว้ตรวจสอบ</strong> (HIPAA)</td></tr>
+          </table>
+        </div>
+        <div class="card" style="border-top:3px solid var(--warning)">
+          <div class="card-title">🎓 Student Registration System</div>
+          <p style="font-size:.8em;color:var(--muted);margin-bottom:8px">ค้นหารายวิชาเพื่อลงทะเบียน — เน้น Real-time</p>
+          <table>
+            <tr><td class="req-id">SRS-01</td><td>ค้นหาด้วย ชื่อวิชา, รหัสวิชา, ภาควิชา</td></tr>
+            <tr><td class="req-id">SRS-02</td><td>Advanced Search: ภาคเรียน, อาจารย์, หน่วยกิต</td></tr>
+            <tr><td class="req-id">SRS-03</td><td>แสดง: รหัส, ชื่อ, อาจารย์, ตาราง, <strong>ที่นั่งว่าง</strong></td></tr>
+            <tr><td class="req-id">SRS-04</td><td>Pagination เมื่อผลลัพธ์เกินขีดจำกัด</td></tr>
+            <tr><td class="req-id">NFR</td><td>ที่นั่งว่างอัปเดต <strong>real-time &lt; 2 วินาที</strong></td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top:8px">
+        <p style="font-size:.78em">📖 อ้างอิง: <strong>IEEE 830-1998</strong> §3 Specific Requirements &bull;
+        <strong>Karl E. Wiegers SRS Template</strong> — <a href="https://github.com/marcobuschini/Software-Requirements-Specification" target="_blank" style="color:var(--accent)">github.com/marcobuschini/SRS</a> &bull;
+        <strong>HIPAA Security Rule</strong> — <a href="https://www.hhs.gov/hipaa" target="_blank" style="color:var(--accent)">hhs.gov/hipaa</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Comparison -->
+  <div class="slide" id="s5">
+    <div class="content">
+      <h2>📊 เปรียบเทียบ Requirement จาก 3 ระบบ</h2>
+      <table>
+        <thead>
+          <tr><th>หัวข้อ</th><th>🛒 E-Commerce</th><th>🏥 Hospital</th><th>🎓 Student Reg</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>ค้นหาอะไร</strong></td><td>สินค้า → ซื้อ</td><td>เวชระเบียนผู้ป่วย</td><td>รายวิชา → ลงทะเบียน</td></tr>
+          <tr><td><strong>เงื่อนไขค้นหา</strong></td><td>ชื่อ, หมวด, ราคา</td><td>Patient ID, ชื่อ, วันเกิด</td><td>รหัสวิชา, ชื่อ, ภาค</td></tr>
+          <tr><td><strong>Filter/Sort</strong></td><td>ราคา, แบรนด์, Rating</td><td>ไม่เน้น (ค้นตรง)</td><td>ภาคเรียน, อาจารย์, หน่วยกิต</td></tr>
+          <tr><td><strong>Performance</strong></td><td><span class="tag tag-pos">&lt; 500ms</span></td><td><span class="tag tag-bva">&lt; 2 วินาที</span></td><td><span class="tag tag-bva">&lt; 2 วินาที</span></td></tr>
+          <tr><td><strong>Concurrent Users</strong></td><td>50,000</td><td>ตามจำนวน จนท.</td><td>5,000 (ช่วงลงทะเบียน)</td></tr>
+          <tr><td><strong>Security</strong></td><td><span class="tag tag-pos">Public</span></td><td><span class="tag tag-neg">HIPAA + Audit</span></td><td><span class="tag tag-bva">Auth Required</span></td></tr>
+        </tbody>
+      </table>
+      <div class="highlight" style="margin-top:14px">
+        <p style="font-size:.92em">💡 <strong>สิ่งที่ได้เรียนรู้:</strong> Requirement ของ "Search" เหมือนกันในชื่อ แต่ <em>เนื้อหาเปลี่ยนตามบริบท</em><br>
+        E-Commerce → UX &amp; Speed &nbsp;|&nbsp; Hospital → Security &amp; Audit &nbsp;|&nbsp; Student → Real-time Data &amp; Peak Load</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Functional Requirements -->
+  <div class="slide" id="s6">
+    <div class="content">
+      <h2>📝 Functional Requirements — ระบบค้นหาสินค้า</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:100px">Req ID</th>
+            <th>Requirement</th>
+            <th style="width:80px">ประเภท</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="req-id">FR-S01</td>
+            <td>ระบบต้องมีช่อง Search Bar แสดงอยู่บน<strong>ทุกหน้า</strong>ของเว็บไซต์</td>
+            <td><span class="tag tag-pos">UI</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S02</td>
+            <td>เมื่อพิมพ์คำค้นหาแล้วกด Enter หรือคลิกปุ่มค้นหา ระบบต้องแสดงรายการสินค้าที่ตรงกับ <strong>ชื่อ,
+                รายละเอียด, หมวดหมู่</strong></td>
+            <td><span class="tag tag-pos">Core</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S03</td>
+            <td>หากไม่พบสินค้า แสดงข้อความ <em>"ไม่พบสินค้าที่ค้นหา"</em> พร้อมแนะนำหมวดหมู่ที่เกี่ยวข้อง</td>
+            <td><span class="tag tag-neg">Error</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S04</td>
+            <td>รองรับอักขระพิเศษ (@, #, &amp;) โดย<strong>ไม่เกิด Error</strong></td>
+            <td><span class="tag tag-neg">Validation</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S05</td>
+            <td>แสดง Autocomplete Suggestions ขณะพิมพ์ (สูงสุด 10 รายการ)</td>
+            <td><span class="tag tag-pos">UX</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="grid2" style="margin-top:12px">
+        <div class="card" style="border-left:3px solid var(--accent)">
+          <div class="card-title">⚡ NFR-S01: Performance</div>
+          <p>ผลการค้นหาต้องแสดง<strong>ภายใน 2 วินาที</strong> สำหรับสินค้าไม่เกิน 100,000 รายการ</p>
+          <p style="font-size:.75em;color:var(--muted);margin-top:6px">📖 ISO/IEC 25010 — Time Behaviour</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent2)">
+          <div class="card-title">🔒 NFR-S02: Security</div>
+          <p>ระบบต้องป้องกัน <strong>SQL Injection / XSS</strong> ผ่านช่องค้นหา</p>
+          <p style="font-size:.75em;color:var(--muted);margin-top:6px">📖 OWASP Top 10 — Injection</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 7: Test Case Design -->
+  <div class="slide" id="s7">
+    <div class="content">
+      <h2>🧪 Test Case ที่แตกจาก Requirement</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>TC ID</th>
+            <th>Req</th>
+            <th>Scenario</th>
+            <th>Expected Result</th>
+            <th>เทคนิค</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="req-id">TC-S01</td>
+            <td>FR-S02</td>
+            <td>ค้นหา "เสื้อยืด"</td>
+            <td>แสดงสินค้าที่มี "เสื้อยืด"</td>
+            <td><span class="tag tag-pos">Positive</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">TC-S02</td>
+            <td>FR-S03</td>
+            <td>ค้นหา "xyzabc123"</td>
+            <td>แสดง "ไม่พบสินค้า" + หมวดแนะนำ</td>
+            <td><span class="tag tag-neg">Negative</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">TC-S03</td>
+            <td>FR-S04</td>
+            <td>ค้นหา "@#&amp;"</td>
+            <td>ไม่เกิด Error</td>
+            <td><span class="tag tag-neg">Negative</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">TC-S04</td>
+            <td>FR-S02</td>
+            <td>ค้นหาด้วย Empty String</td>
+            <td>ไม่ค้นหา หรือแจ้งเตือน</td>
+            <td><span class="tag tag-bva">Edge</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">TC-S05</td>
+            <td>FR-S02</td>
+            <td>ค้นหาด้วยข้อความ 51 ตัวอักษร (เกิน Max)</td>
+            <td>ระบบตัดหรือแจ้ง Error</td>
+            <td><span class="tag tag-bva">BVA</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">TC-S06</td>
+            <td>FR-S01</td>
+            <td>ตรวจ Search Bar ทุกหน้า (Home, Cart, Product)</td>
+            <td>Search Bar แสดงทุกหน้า</td>
+            <td><span class="tag tag-pos">Positive</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">TC-S07</td>
+            <td>NFR-S01</td>
+            <td>ค้นหาในระบบ 100,000 สินค้า</td>
+            <td>แสดงผลภายใน 2 วินาที</td>
+            <td><span class="tag tag-bva">Perf</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Slide 8: Test Design Techniques -->
+  <div class="slide" id="s8">
+    <div class="content">
+      <h2>📐 เทคนิคการออกแบบ Test Case (ISTQB)</h2>
+      <div class="grid2">
+        <div class="card" style="border-top:3px solid var(--primary)">
+          <div class="card-title">1. Equivalence Partitioning (EP)</div>
+          <p>แบ่งกลุ่มข้อมูล Input ที่ให้ผลลัพธ์เหมือนกัน</p>
+          <ul style="margin-top:8px">
+            <li><span class="tag tag-pos">Valid</span> คำค้นหา 1-50 ตัวอักษร → แสดงผล</li>
+            <li><span class="tag tag-neg">Invalid</span> ค่าว่าง (0 ตัวอักษร) → Error</li>
+            <li><span class="tag tag-neg">Invalid</span> เกิน 50 ตัวอักษร → Error</li>
+          </ul>
+        </div>
+        <div class="card" style="border-top:3px solid var(--accent)">
+          <div class="card-title">2. Boundary Value Analysis (BVA)</div>
+          <p>ทดสอบค่าที่ขอบเขต เพราะ Bug มักเกิดตรงนี้</p>
+          <table style="margin-top:8px">
+            <tr>
+              <td>0 ตัวอักษร</td>
+              <td><span class="tag tag-neg">Invalid</span></td>
+            </tr>
+            <tr>
+              <td>1 ตัวอักษร</td>
+              <td><span class="tag tag-pos">Min Valid</span></td>
+            </tr>
+            <tr>
+              <td>50 ตัวอักษร</td>
+              <td><span class="tag tag-pos">Max Valid</span></td>
+            </tr>
+            <tr>
+              <td>51 ตัวอักษร</td>
+              <td><span class="tag tag-neg">Invalid</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top:12px">
+        <p style="font-size:.9em"><strong>📖 อ้างอิง:</strong> ISTQB Foundation Level Syllabus v4.0 — Chapter 4: Test
+          Design Techniques<br>
+          <span style="color:var(--muted)">Equivalence Partitioning (§4.2.1) และ Boundary Value Analysis (§4.2.2)</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 9: Traceability -->
+  <div class="slide" id="s9">
+    <div class="content">
+      <h2>🔗 Requirement Traceability Matrix</h2>
+      <p style="color:var(--muted);margin-bottom:16px">ทุก Requirement → ต้องมี Test Case อ้างอิง
+        เพื่อให้มั่นใจว่าครอบคลุมทุกข้อ</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Req ID</th>
+            <th>Requirement (สรุป)</th>
+            <th>Test Case ที่ Cover</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="req-id">FR-S01</td>
+            <td>Search Bar ทุกหน้า</td>
+            <td>TC-S06</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S02</td>
+            <td>ค้นหาและแสดงผล</td>
+            <td>TC-S01, TC-S04, TC-S05</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S03</td>
+            <td>ไม่พบสินค้า → แจ้งเตือน</td>
+            <td>TC-S02</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S04</td>
+            <td>อักขระพิเศษ</td>
+            <td>TC-S03</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">FR-S05</td>
+            <td>Autocomplete</td>
+            <td>TC-S08 (เพิ่มเติม)</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">NFR-S01</td>
+            <td>Performance ≤ 2 วินาที</td>
+            <td>TC-S07</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+          <tr>
+            <td class="req-id">NFR-S02</td>
+            <td>Security (Injection)</td>
+            <td>TC-S03 + Pen Test</td>
+            <td><span class="tag tag-pos">Covered ✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="highlight" style="margin-top:12px">
+        <p style="font-size:.88em">💡 <strong>Traceability Matrix</strong> ช่วยให้ QA มั่นใจว่า <em>ไม่มี Requirement
+            ตกหล่น</em> — ทุกข้อต้องมี Test Case อย่างน้อย 1 ข้อ</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: References -->
+  <div class="slide" id="s10">
+    <div class="content">
+      <h2>📚 แหล่งอ้างอิง (References)</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3>มาตรฐานสากล</h3>
+          <div class="ref-list">
+            <p>[1] <strong>IEEE 830-1998</strong> — Recommended Practice for Software Requirements Specifications<br>
+              <a href="https://standards.ieee.org/standard/830-1998.html"
+                target="_blank">standards.ieee.org/standard/830-1998</a>
+            </p>
+            <p>[2] <strong>ISO/IEC/IEEE 29148:2018</strong> — Systems and Software Engineering: Life Cycle Processes —
+              Requirements Engineering<br>
+              <a href="https://www.iso.org/standard/72089.html" target="_blank">iso.org/standard/72089</a>
+            </p>
+            <p>[3] <strong>ISO/IEC 25010:2023</strong> — Software Product Quality Model (Performance Efficiency,
+              Usability)<br>
+              <a href="https://www.iso.org/standard/78176.html" target="_blank">iso.org/standard/78176</a>
+            </p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>การทดสอบซอฟต์แวร์</h3>
+          <div class="ref-list">
+            <p>[4] <strong>ISTQB Foundation Level Syllabus v4.0</strong> — Chapter 4: Test Design Techniques (EP,
+              BVA)<br>
+              <a href="https://www.istqb.org/certifications/certified-tester-foundation-level"
+                target="_blank">istqb.org/certifications</a>
+            </p>
+            <p>[5] <strong>OWASP Top 10:2021</strong> — A03: Injection (SQL Injection, XSS Prevention)<br>
+              <a href="https://owasp.org/Top10/A03_2021-Injection/" target="_blank">owasp.org/Top10/A03</a>
+            </p>
+          </div>
+          <h3 style="margin-top:14px">UX Research</h3>
+          <div class="ref-list">
+            <p>[6] <strong>Baymard Institute</strong> — E-Commerce Search Autocomplete UX Best Practices<br>
+              <a href="https://baymard.com/blog/autocomplete-design"
+                target="_blank">baymard.com/blog/autocomplete-design</a>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:24px">
+        <p style="font-size:1.5em;margin-bottom:8px">🙏</p>
+        <h1 style="font-size:1.8em">ขอบคุณครับ</h1>
+        <p class="subtitle">Q&A — มีคำถามไหมครับ?</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="slide-number" id="slideNum">1 / 10</div>
+  <nav>
+    <button onclick="changeSlide(-1)">◀ ก่อนหน้า</button>
+    <button onclick="changeSlide(1)">ถัดไป ▶</button>
+  </nav>
+
+  <script>
+    let current = 0;
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    function showSlide(n) {
+      slides.forEach(s => s.classList.remove('active'));
+      slides[n].classList.add('active');
+      document.getElementById('slideNum').textContent = (n + 1) + ' / ' + total;
+      document.getElementById('progressBar').style.width = ((n + 1) / total * 100) + '%';
+    }
+    function changeSlide(d) {
+      current = Math.max(0, Math.min(total - 1, current + d));
+      showSlide(current);
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') changeSlide(1);
+      if (e.key === 'ArrowLeft') changeSlide(-1);
+    });
+    showSlide(0);
+  </script>
+</body>
+
+</html>
